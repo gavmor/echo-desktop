@@ -64,15 +64,6 @@ pactl set-sink-mute "$SPLIT_SINK_NUM_ID" false
 pactl set-sink-volume "$MIX_SINK_NUM_ID" 100%
 pactl set-sink-mute "$MIX_SINK_NUM_ID" false
 
-# Set the virtual devices as the system defaults for this session
-# This ensures even Snap/Flatpak apps (like Firefox) route correctly
-OLD_DEFAULT_SINK=$(pactl get-default-sink)
-OLD_DEFAULT_SOURCE=$(pactl get-default-source)
-
-SPLIT_SINK_NUM_ID=$(pactl list sinks short | grep "SplitSink" | awk '{print $1}' | head -n 1)
-pactl set-default-sink "$SPLIT_SINK_NUM_ID"
-pactl set-default-source WhisperMixSink.monitor
-
 # Ensure cleanup restores EVERYTHING
 cleanup() {
     echo -e "
@@ -90,6 +81,12 @@ Cleaning up audio routing and processes..."
     pactl unload-module "$MIX_SINK_ID" || true
     exit
 }
+
+trap cleanup INT TERM EXIT
+
+# Only set defaults if absolutely necessary, and keep it safe
+OLD_DEFAULT_SOURCE=$(pactl get-default-source)
+OLD_DEFAULT_SINK=$(pactl get-default-sink)
 
 echo "Audio routing complete."
 echo "--------------------------------------------------------"
