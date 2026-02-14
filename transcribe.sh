@@ -96,22 +96,28 @@ echo "--------------------------------------------------------"
 # 6. Optional: Move existing stream if an argument is provided
 if [ -n "$1" ]; then
     echo "Searching for '$1' audio streams..."
-    # Get all sink-input IDs that match the application name or process name
-    APP_INPUT_IDS=$(pactl list sink-inputs | grep -B 20 -E "application.name = \"$1\"|node.name = \"$1\"|media.name = \"$1\"" | grep "Sink Input #" | cut -d "#" -f 2)
+    # Robustly get all sink-input IDs that match the application name
+    APP_INPUT_IDS=$(pactl list sink-inputs | awk -v app="$1" '
+        /Sink Input #/ { id = $3 }
+        $0 ~ "application.name = \"" app "\"" { print id }
+        $0 ~ "node.name = \"" app "\"" { print id }
+    ' | sed 's/#//')
     
     if [ -n "$APP_INPUT_IDS" ]; then
         for ID in $APP_INPUT_IDS; do
             echo "Moving stream #$ID to SplitSink..."
-            pactl move-sink-input "$ID" SplitSink
+            pactl move-sink-input "$ID" SplitSink || true
         done
         echo "Successfully redirected '$1' to the transcriber."
         # If this was called as a helper, exit so we don't start a second whisper process
-        if [ "$0" = "./transcribe.sh" ] || [ "$0" = "transcribe.sh" ]; then
-            exit 0
+        # We check if we are in a subshell or a second instance
+        if [ "$PPID" != "1" ]; then
+             exit 0
         fi
     else
-        echo "Could not find an active '$1' stream. Try using the exact name from 'pactl list sink-inputs'."
-        exit 1
+        echo "Could not find an active '$1' stream."
+        # Don't exit here if we are just starting the main script
+        if [ "$2" == "--required" ]; then exit 1; fi
     fi
 fi
 
