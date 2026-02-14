@@ -55,11 +55,14 @@ MIC_LOOPBACK_ID=$(pactl load-module module-loopback source=$DEFAULT_SOURCE sink=
 
 # Step B: Ensure everything is unmuted and at 100% volume
 echo "Optimizing volume levels..."
-sleep 1
-pactl set-sink-volume WhisperMixSink 100%
-pactl set-sink-mute WhisperMixSink false
-pactl set-sink-volume SplitSink 100%
-pactl set-sink-mute SplitSink false
+sleep 2 # Give PipeWire/PulseAudio time to initialize modules
+SPLIT_SINK_NUM_ID=$(pactl list sinks short | grep "SplitSink" | awk '{print $1}')
+MIX_SINK_NUM_ID=$(pactl list sinks short | grep "WhisperMixSink" | awk '{print $1}')
+
+pactl set-sink-volume "$SPLIT_SINK_NUM_ID" 100%
+pactl set-sink-mute "$SPLIT_SINK_NUM_ID" false
+pactl set-sink-volume "$MIX_SINK_NUM_ID" 100%
+pactl set-sink-mute "$MIX_SINK_NUM_ID" false
 
 # Ensure cleanup tears down all virtual modules and exits
 cleanup() {
@@ -104,9 +107,11 @@ if [ -n "$1" ]; then
     ' | sed 's/#//')
     
     if [ -n "$APP_INPUT_IDS" ]; then
+        # Find numeric ID for SplitSink again in case this is a separate helper call
+        SINK_ID=$(pactl list sinks short | grep "SplitSink" | awk '{print $1}')
         for ID in $APP_INPUT_IDS; do
-            echo "Moving stream #$ID to SplitSink..."
-            pactl move-sink-input "$ID" SplitSink || true
+            echo "Moving stream #$ID to SplitSink (ID: $SINK_ID)..."
+            pactl move-sink-input "$ID" "$SINK_ID" || true
         done
         echo "Successfully redirected '$1' to the transcriber."
         # If this was called as a helper, exit so we don't start a second whisper process
