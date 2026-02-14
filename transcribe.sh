@@ -56,7 +56,10 @@ MIC_LOOPBACK_ID=$(pactl load-module module-loopback source=$DEFAULT_SOURCE sink=
 # Ensure cleanup tears down all virtual modules and exits
 cleanup() {
     echo -e "
-Cleaning up audio routing..."
+Cleaning up audio routing and processes..."
+    # Kill any child processes of this script (like whisper-stream)
+    jobs -p | xargs -r kill -9 2>/dev/null || true
+    
     # Restore default source if we changed it
     if [ -n "$OLD_DEFAULT_SOURCE" ]; then
         pactl set-default-source "$OLD_DEFAULT_SOURCE" || true
