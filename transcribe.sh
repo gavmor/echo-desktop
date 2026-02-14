@@ -64,14 +64,24 @@ pactl set-sink-mute "$SPLIT_SINK_NUM_ID" false
 pactl set-sink-volume "$MIX_SINK_NUM_ID" 100%
 pactl set-sink-mute "$MIX_SINK_NUM_ID" false
 
-# Ensure cleanup tears down all virtual modules and exits
+# Set the virtual devices as the system defaults for this session
+# This ensures even Snap/Flatpak apps (like Firefox) route correctly
+OLD_DEFAULT_SINK=$(pactl get-default-sink)
+OLD_DEFAULT_SOURCE=$(pactl get-default-source)
+
+SPLIT_SINK_NUM_ID=$(pactl list sinks short | grep "SplitSink" | awk '{print $1}' | head -n 1)
+pactl set-default-sink "$SPLIT_SINK_NUM_ID"
+pactl set-default-source WhisperMixSink.monitor
+
+# Ensure cleanup restores EVERYTHING
 cleanup() {
     echo -e "
 Cleaning up audio routing and processes..."
-    # Kill any child processes of this script (like whisper-stream)
     jobs -p | xargs -r kill -9 2>/dev/null || true
     
-    # Restore default source if we changed it
+    if [ -n "$OLD_DEFAULT_SINK" ]; then
+        pactl set-default-sink "$OLD_DEFAULT_SINK" || true
+    fi
     if [ -n "$OLD_DEFAULT_SOURCE" ]; then
         pactl set-default-source "$OLD_DEFAULT_SOURCE" || true
     fi
@@ -80,13 +90,6 @@ Cleaning up audio routing and processes..."
     pactl unload-module "$MIX_SINK_ID" || true
     exit
 }
-
-trap cleanup INT TERM EXIT
-
-# Set the virtual mixer as the default source for this session
-# This ensures SDL and other apps pick it up without complex ID mapping
-OLD_DEFAULT_SOURCE=$(pactl get-default-source)
-pactl set-default-source WhisperMixSink.monitor
 
 echo "Audio routing complete."
 echo "--------------------------------------------------------"
