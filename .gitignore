@@ -1,0 +1,4 @@
+whisper.cpp/
+transcription_log.txt
+*.bin
+build/
