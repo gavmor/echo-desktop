@@ -131,8 +131,11 @@ fi
 
 # 5. Launch Whisper, listening only to the virtual mixer
 echo "Starting transcription (GPU Accelerated)..."
+echo "TIP: If no text appears, check that 'Whisper_Mixer' shows activity in pavucontrol."
 echo -e "\n--- Session started at $(date) ---" >> "$LOG_FILE"
-# Force SDL to use PulseAudio and follow the default source we just set
+
+# Force SDL to use PulseAudio
 export SDL_AUDIO_DRIVER=pulseaudio
-# whisper-stream uses GPU by default if built with CUDA; we force device 0 via env
-CUDA_VISIBLE_DEVICES=0 stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 8 2>&1 | tee -a "$LOG_FILE"
+# We use the monitor source of the mixer directly
+export PULSE_SOURCE=WhisperMixSink.monitor
+stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 8 --step 3000 --length 10000 2>&1 | tee -a "$LOG_FILE"
