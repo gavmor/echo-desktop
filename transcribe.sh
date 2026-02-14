@@ -35,7 +35,10 @@ if [ ! -f "models/ggml-$MODEL.bin" ]; then
     bash ./models/download-ggml-model.sh "$MODEL"
 fi
 
-echo "Setting up advanced audio routing..."
+echo "Performing nuclear cleanup of existing virtual audio modules..."
+pactl list modules short | grep -E "module-null-sink|module-combine-sink|module-loopback" | awk '{print $1}' | xargs -r -n1 pactl unload-module || true
+
+echo "Setting up clean audio routing..."
 
 # Step A: Get the system's actual default devices to ensure precise routing
 DEFAULT_SINK=$(pactl get-default-sink)
