@@ -95,17 +95,23 @@ echo "--------------------------------------------------------"
 
 # 6. Optional: Move existing stream if an argument is provided
 if [ -n "$1" ]; then
-    echo "Attempting to move existing '$1' stream(s) to SplitSink..."
-    # Find the Sink Input IDs for the application
-    APP_INPUT_IDS=$(pactl list sink-inputs | grep -B 20 "application.name = \"$1\"" | grep "Sink Input #" | cut -d "#" -f 2)
+    echo "Searching for '$1' audio streams..."
+    # Get all sink-input IDs that match the application name or process name
+    APP_INPUT_IDS=$(pactl list sink-inputs | grep -B 20 -E "application.name = \"$1\"|node.name = \"$1\"|media.name = \"$1\"" | grep "Sink Input #" | cut -d "#" -f 2)
     
     if [ -n "$APP_INPUT_IDS" ]; then
         for ID in $APP_INPUT_IDS; do
+            echo "Moving stream #$ID to SplitSink..."
             pactl move-sink-input "$ID" SplitSink
-            echo "Moved stream #$ID to SplitSink."
         done
+        echo "Successfully redirected '$1' to the transcriber."
+        # If this was called as a helper, exit so we don't start a second whisper process
+        if [ "$0" = "./transcribe.sh" ] || [ "$0" = "transcribe.sh" ]; then
+            exit 0
+        fi
     else
-        echo "Could not find an active $1 audio stream. Make sure it is playing audio."
+        echo "Could not find an active '$1' stream. Try using the exact name from 'pactl list sink-inputs'."
+        exit 1
     fi
 fi
 
