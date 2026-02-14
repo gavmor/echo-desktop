@@ -99,8 +99,9 @@ if [ -n "$1" ]; then
 fi
 
 # 5. Launch Whisper, listening only to the virtual mixer
-echo "Starting transcription..."
+echo "Starting transcription (GPU Accelerated)..."
 echo -e "\n--- Session started at $(date) ---" >> "$LOG_FILE"
 # Force SDL to use PulseAudio and follow the default source we just set
 export SDL_AUDIO_DRIVER=pulseaudio
-stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 4 | tee -a "$LOG_FILE"
+# -ngl 32 offloads layers to GPU; --device 0 selects the first CUDA device
+stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 4 -ngl 32 --device 0 2>&1 | tee -a "$LOG_FILE"
