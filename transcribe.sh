@@ -5,7 +5,7 @@ set -e
 
 ROOT_DIR=$(pwd)
 WHISPER_DIR="whisper.cpp"
-MODEL="base.en"
+MODEL="medium.en"
 LOG_FILE="$ROOT_DIR/transcription_log.txt"
 CUSTOM_VOCAB="Mountain View, Foothill College, Smithwick Theatre, Artium, Preact, Vue"
 
