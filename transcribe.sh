@@ -92,4 +92,5 @@ fi
 # 5. Launch Whisper, listening only to the virtual mixer
 echo "Starting transcription..."
 echo -e "\n--- Session started at $(date) ---" >> "$LOG_FILE"
-PULSE_SOURCE=WhisperMixSink.monitor ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" | tee -a "$LOG_FILE"
+# Use stdbuf to prevent buffering so words appear in real-time
+PULSE_SOURCE=WhisperMixSink.monitor stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" | tee -a "$LOG_FILE"
