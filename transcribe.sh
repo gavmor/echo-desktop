@@ -53,6 +53,14 @@ COMBINE_SINK_ID=$(pactl load-module module-combine-sink slaves=$DEFAULT_SINK,Whi
 # We do NOT send this to the Combine Sink, which is why you won't hear yourself
 MIC_LOOPBACK_ID=$(pactl load-module module-loopback source=$DEFAULT_SOURCE sink=WhisperMixSink latency_msec=20)
 
+# Step B: Ensure everything is unmuted and at 100% volume
+echo "Optimizing volume levels..."
+sleep 1
+pactl set-sink-volume WhisperMixSink 100%
+pactl set-sink-mute WhisperMixSink false
+pactl set-sink-volume SplitSink 100%
+pactl set-sink-mute SplitSink false
+
 # Ensure cleanup tears down all virtual modules and exits
 cleanup() {
     echo -e "
