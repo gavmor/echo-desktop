@@ -134,8 +134,12 @@ echo "Starting transcription (GPU Accelerated)..."
 echo "TIP: If no text appears, check that 'Whisper_Mixer' shows activity in pavucontrol."
 echo -e "\n--- Session started at $(date) ---" >> "$LOG_FILE"
 
+# FORCE SDL to use the virtual mixer by making it the default source temporarily
+# This is the most reliable way to make SDL/whisper-stream listen to a virtual device
+OLD_DEFAULT_SOURCE=$(pactl get-default-source)
+pactl set-default-source WhisperMixSink.monitor
+
 # Force SDL to use PulseAudio
 export SDL_AUDIO_DRIVER=pulseaudio
-# We use the monitor source of the mixer directly
-export PULSE_SOURCE=WhisperMixSink.monitor
-stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 8 --step 3000 --length 10000 2>&1 | tee -a "$LOG_FILE"
+# -kc (keep context) often helps with stream stability
+stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 8 --step 3000 --length 10000 -kc 2>&1 | tee -a "$LOG_FILE"
