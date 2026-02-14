@@ -5,7 +5,7 @@ set -e
 
 ROOT_DIR=$(pwd)
 WHISPER_DIR="whisper.cpp"
-MODEL="medium.en"
+MODEL="large-v3-turbo"
 LOG_FILE="$ROOT_DIR/transcription_log.txt"
 CUSTOM_VOCAB="Mountain View, Foothill College, Smithwick Theatre, Artium, Preact, Vue"
 
@@ -107,4 +107,4 @@ echo -e "\n--- Session started at $(date) ---" >> "$LOG_FILE"
 # Force SDL to use PulseAudio and follow the default source we just set
 export SDL_AUDIO_DRIVER=pulseaudio
 # whisper-stream uses GPU by default if built with CUDA; we force device 0 via env
-CUDA_VISIBLE_DEVICES=0 stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 4 2>&1 | tee -a "$LOG_FILE"
+CUDA_VISIBLE_DEVICES=0 stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 8 2>&1 | tee -a "$LOG_FILE"
