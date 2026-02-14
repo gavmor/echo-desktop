@@ -3,9 +3,10 @@
 # Exit if any command fails
 set -e
 
+ROOT_DIR=$(pwd)
 WHISPER_DIR="whisper.cpp"
 MODEL="base.en"
-LOG_FILE="transcription_log.txt"
+LOG_FILE="$ROOT_DIR/transcription_log.txt"
 CUSTOM_VOCAB="Mountain View, Foothill College, Smithwick Theatre, Artium, Preact, Vue"
 
 # 1. Setup whisper.cpp if not present
@@ -69,7 +70,7 @@ echo "--------------------------------------------------------"
 echo "INSTRUCTIONS:"
 echo "1. To transcribe an application, run it with: PULSE_SINK=SplitSink <app>"
 echo "2. Your default microphone is already being routed to the transcriber."
-echo "3. Transcription will be saved to: $(pwd)/$LOG_FILE"
+echo "3. Transcription will be saved to: $LOG_FILE"
 echo "--------------------------------------------------------"
 
 # 6. Optional: Move existing stream if an argument is provided
@@ -90,4 +91,5 @@ fi
 
 # 5. Launch Whisper, listening only to the virtual mixer
 echo "Starting transcription..."
-PULSE_SOURCE=WhisperMixSink.monitor ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -f "$LOG_FILE"
+echo -e "\n--- Session started at $(date) ---" >> "$LOG_FILE"
+PULSE_SOURCE=WhisperMixSink.monitor ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" | tee -a "$LOG_FILE"
