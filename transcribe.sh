@@ -17,9 +17,9 @@ fi
 cd "$WHISPER_DIR"
 
 if [ ! -f "build/bin/whisper-stream" ]; then
-    echo "Building whisper.cpp (including stream tool)..."
-    cmake -B build -DWHISPER_SDL2=ON
-    cmake --build build --config Release -j
+    echo "Building whisper.cpp (including stream tool) with CUDA support..."
+    cmake -B build -DWHISPER_SDL2=ON -DGGML_CUDA=ON
+    cmake --build build --config Release -j$(nproc)
 fi
 
 if [ ! -f "build/bin/whisper-stream" ]; then
