@@ -57,6 +57,10 @@ MIC_LOOPBACK_ID=$(pactl load-module module-loopback source=$DEFAULT_SOURCE sink=
 cleanup() {
     echo -e "
 Cleaning up audio routing..."
+    # Restore default source if we changed it
+    if [ -n "$OLD_DEFAULT_SOURCE" ]; then
+        pactl set-default-source "$OLD_DEFAULT_SOURCE" || true
+    fi
     pactl unload-module "$MIC_LOOPBACK_ID" || true
     pactl unload-module "$COMBINE_SINK_ID" || true
     pactl unload-module "$MIX_SINK_ID" || true
@@ -64,6 +68,11 @@ Cleaning up audio routing..."
 }
 
 trap cleanup INT TERM EXIT
+
+# Set the virtual mixer as the default source for this session
+# This ensures SDL and other apps pick it up without complex ID mapping
+OLD_DEFAULT_SOURCE=$(pactl get-default-source)
+pactl set-default-source WhisperMixSink.monitor
 
 echo "Audio routing complete."
 echo "--------------------------------------------------------"
@@ -92,5 +101,6 @@ fi
 # 5. Launch Whisper, listening only to the virtual mixer
 echo "Starting transcription..."
 echo -e "\n--- Session started at $(date) ---" >> "$LOG_FILE"
-# Use stdbuf to prevent buffering so words appear in real-time
-PULSE_SOURCE=WhisperMixSink.monitor stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" | tee -a "$LOG_FILE"
+# Force SDL to use PulseAudio and follow the default source we just set
+export SDL_AUDIO_DRIVER=pulseaudio
+stdbuf -oL ./build/bin/whisper-stream -m "models/ggml-$MODEL.bin" -t 4 | tee -a "$LOG_FILE"
